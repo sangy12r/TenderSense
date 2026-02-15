@@ -177,8 +177,7 @@ Company Profile:
         # DISPLAY RESULTS
         # ----------------------------
 st.markdown("---")
-        st.markdown("## Eligibility Evaluation")
-
+st.markdown("## Eligibility Evaluation")
         for req in mandatory_requirements:
             status = evaluation.get(req, "NO_MATCH")
             st.write(f"• {req}")
