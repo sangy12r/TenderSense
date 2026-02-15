@@ -176,7 +176,8 @@ Company Profile:
         # ----------------------------
         # DISPLAY RESULTS
         # ----------------------------
-        st.subheader("Requirement-by-Requirement Evaluation")
+st.markdown("---")
+        st.markdown("## Eligibility Evaluation")
 
         for req in mandatory_requirements:
             status = evaluation.get(req, "NO_MATCH")
@@ -184,19 +185,26 @@ Company Profile:
             st.write(f"   → {status}")
             st.write("")
 
-        st.subheader("Missing Requirements")
+        st.markdown("## Missing Mandatory Requirements")
         if missing:
             for m in missing:
                 st.write(f"• {m}")
         else:
             st.write("None")
 
-        st.subheader("Partially Met Requirements")
+        st.markdown("## Partially Met Requirements")
         if partial:
             for p in partial:
                 st.write(f"• {p}")
         else:
             st.write("None")
 
-        st.subheader("Final Recommendation")
-        st.write(f"Decision: {final_decision}")
+        st.markdown("## Final Bid Recommendation")
+        if final_decision == "STRONG GO":
+    st.success(f"Decision: {final_decision}")
+elif final_decision == "CONDITIONAL GO":
+    st.warning(f"Decision: {final_decision}")
+else:
+    st.error(f"Decision: {final_decision}")
+st.markdown("---")
+st.caption("TenderSense | AI-powered bid / no-bid decision support system")
