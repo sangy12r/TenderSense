@@ -68,14 +68,26 @@ def clean_json_response(content):
     if content.startswith("```"):
         content = content.replace("```json", "")
         content = content.replace("```", "")
-        content = content.strip()
+    content = content.strip()
     return content
+def check_file_size(uploaded_file, max_size_mb=10):
+    if uploaded_file is not None:
+        file_size = uploaded_file.size / (1024 * 1024)
+        if file_size > max_size_mb:
+            st.error(f"File too large. Please upload a file under {max_size_mb} MB.")
+            return False
+    return True
 tender_file = st.file_uploader("Upload Tender PDF", type="pdf")
 company_file = st.file_uploader("Upload Company Profile PDF", type="pdf")
 run_button = st.button("🚀 Run Eligibility Check")
 
-if tender_file and company_file and st.button("Run Fit Evaluation"):
-
+if (
+    tender_file 
+    and company_file 
+    and check_file_size(tender_file)
+    and check_file_size(company_file)
+    and run_button
+):
     with st.spinner("Analyzing tender and company profile..."):
 
         tender_text = extract_text(tender_file)
