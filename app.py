@@ -70,7 +70,7 @@ def clean_json_response(content):
         content = content.replace("```", "")
     content = content.strip()
     return content
-def check_file_size(uploaded_file, max_size_mb=10):
+def check_file_size(uploaded_file, max_size_mb=200):
     if uploaded_file is not None:
         file_size = uploaded_file.size / (1024 * 1024)
         if file_size > max_size_mb:
