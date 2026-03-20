@@ -3,18 +3,57 @@ import pdfplumber
 import os
 import json
 from openai import OpenAI
+st.set_page_config(
+        layout="wide"
+)
+
+st.image("logo.png", width=320)
+
+st.markdown("""
+<style>
+body {
+    background-color: #F8FAFC;
+}
+h1, h2, h3 {
+    color: #1E3A8A;
+}
+.stButton>button {
+    background-color: #1E3A8A;
+    color: white;
+    border-radius: 8px;
+}
+</style>
+""", unsafe_allow_html=True)
 
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
-st.title("TenderSense – AI Tender Fit Evaluation System")
 st.markdown("""
+### AI-powered Tender Eligibility Checker for MSMEs
+
+Evaluate tender eligibility in seconds.
+Make faster, smarter bid decisions with AI.  
+Make smarter bidding decisions with structured AI evaluation.
+""")
+
+st.markdown("""
+---
+
 ### Problem
 MSMEs struggle to interpret lengthy tender documents and assess eligibility before bidding.
 
 ### Solution
 This AI system extracts mandatory eligibility criteria from a tender and evaluates a company's fit based on explicit evidence in its profile.
 """)
+col1, col2, col3 = st.columns(3)
 
+with col1:
+    st.info("📑 Extract Requirements")
+
+with col2:
+    st.info("🔍 Evaluate Company Fit")
+
+with col3:
+    st.info("✅ Get Bid Decision")
 def extract_text(uploaded_file):
     text = ""
     with pdfplumber.open(uploaded_file) as pdf:
@@ -31,9 +70,9 @@ def clean_json_response(content):
         content = content.replace("```", "")
         content = content.strip()
     return content
-
 tender_file = st.file_uploader("Upload Tender PDF", type="pdf")
 company_file = st.file_uploader("Upload Company Profile PDF", type="pdf")
+run_button = st.button("🚀 Run Eligibility Check")
 
 if tender_file and company_file and st.button("Run Fit Evaluation"):
 
@@ -211,4 +250,4 @@ Company Profile:
         else:
             st.error(f"Decision: {final_decision}")
 st.markdown("---")
-st.caption("TenderSense | AI-powered bid / no-bid decision support system")
+st.caption("TenderSense | AI-powered bid / no-bid decision engine for MSMEs")
