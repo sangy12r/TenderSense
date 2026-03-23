@@ -514,14 +514,14 @@ with col_support:
     st.caption("Didn't receive your unlock code? Facing any issue? Reach us directly.")
     whatsapp_url = f"https://wa.me/{918692859069}?text=Hi%2C%20I%20need%20help%20with%20TenderSense%20after%20making%20payment."
     st.link_button("💬 Chat on WhatsApp", whatsapp_url)
-    st.markdown(f"Or email us: [{SUPPORT_EMAIL}](mailto:{sangy12r@gmail.com}?subject=TenderSense%20Support)")
+    st.markdown(f"Or email us: [{SUPPORT_EMAIL}](mailto:{SUPPORT_EMAIL}?subject=TenderSense%20Support)")
 
 with col_feedback:
     st.markdown("#### 📝 Share Your Feedback")
     st.caption("Help us improve TenderSense. Your feedback matters.")
     feedback_subject = "TenderSense%20Feedback"
     feedback_body    = "Hi%20TenderSense%20Team%2C%0A%0AHere%20is%20my%20feedback%3A%0A%0A"
-    st.markdown(f"[📧 Send Feedback via Email](mailto:{sangy12r@gmail.com}?subject={feedback_subject}&body={feedback_body})")
+    st.markdown(f"[📧 Send Feedback via Email](mailto:{FEEDBACK_EMAIL}?subject={feedback_subject}&body={feedback_body})")
 
     with st.expander("✍️ Quick Feedback (Optional)"):
         rating  = st.select_slider("Rate your experience", options=["⭐", "⭐⭐", "⭐⭐⭐", "⭐⭐⭐⭐", "⭐⭐⭐⭐⭐"], value="⭐⭐⭐")
