@@ -36,9 +36,9 @@ RAZORPAY_LINK        = "https://razorpay.me/@sangeetaailabs"
 PRICE_DISPLAY        = "₹49"
 
 # Support & feedback contacts — update these with your real details
-WHATSAPP_NUMBER      = "919XXXXXXXXX"       # your number with country code, no + sign
-SUPPORT_EMAIL        = "support@tendersense.ai"   # your support email
-FEEDBACK_EMAIL       = "feedback@tendersense.ai"  # can be same as support
+WHATSAPP_NUMBER      = "918692859069"       # your number with country code, no + sign
+SUPPORT_EMAIL        = "sangy12r@gmail.com"   # your support email
+FEEDBACK_EMAIL       = "sangy12r@gmail.com"  # can be same as support
 
 # Unlock codes — add as many as you want.
 # Each code = 1 paid check. Share one code per payment manually via email/WhatsApp.
