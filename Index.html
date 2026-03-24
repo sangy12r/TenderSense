@@ -1,0 +1,805 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>TenderSense — AI Tender Eligibility Checker for MSMEs</title>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,400;0,700;0,900;1,400&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --navy:       #0F2557;
+      --blue:       #1E3A8A;
+      --accent:     #F59E0B;
+      --accent2:    #10B981;
+      --light:      #F0F4FF;
+      --white:      #FFFFFF;
+      --text:       #1C1C2E;
+      --muted:      #6B7280;
+      --card-bg:    #FFFFFF;
+      --border:     #E5E7EB;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      color: var(--text);
+      background: var(--white);
+      overflow-x: hidden;
+    }
+
+    /* ── NAV ── */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0;
+      z-index: 100;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 18px 6%;
+      background: rgba(255,255,255,0.92);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+    }
+    .nav-logo {
+      font-family: 'Fraunces', serif;
+      font-size: 1.5rem; font-weight: 900;
+      color: var(--navy);
+      letter-spacing: -0.5px;
+    }
+    .nav-logo span { color: var(--accent); }
+    .nav-links { display: flex; gap: 32px; list-style: none; }
+    .nav-links a {
+      text-decoration: none; color: var(--muted);
+      font-size: 0.95rem; font-weight: 500;
+      transition: color 0.2s;
+    }
+    .nav-links a:hover { color: var(--blue); }
+    .nav-cta {
+      background: var(--blue); color: var(--white);
+      padding: 10px 24px; border-radius: 8px;
+      text-decoration: none; font-weight: 600;
+      font-size: 0.95rem;
+      transition: background 0.2s, transform 0.15s;
+    }
+    .nav-cta:hover { background: var(--navy); transform: translateY(-1px); }
+
+    /* ── HERO ── */
+    .hero {
+      min-height: 100vh;
+      background: linear-gradient(135deg, #0F2557 0%, #1E3A8A 50%, #1D4ED8 100%);
+      display: flex; align-items: center;
+      padding: 120px 6% 80px;
+      position: relative; overflow: hidden;
+    }
+    .hero::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: radial-gradient(ellipse at 70% 50%, rgba(245,158,11,0.12) 0%, transparent 60%),
+                  radial-gradient(ellipse at 20% 80%, rgba(16,185,129,0.08) 0%, transparent 50%);
+    }
+    .hero-grid {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 60px; align-items: center;
+      max-width: 1200px; margin: 0 auto;
+      position: relative; z-index: 1;
+    }
+    .hero-badge {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: rgba(245,158,11,0.15);
+      border: 1px solid rgba(245,158,11,0.3);
+      color: var(--accent);
+      padding: 6px 16px; border-radius: 100px;
+      font-size: 0.82rem; font-weight: 600;
+      letter-spacing: 0.5px; text-transform: uppercase;
+      margin-bottom: 24px;
+    }
+    .hero h1 {
+      font-family: 'Fraunces', serif;
+      font-size: clamp(2.4rem, 4vw, 3.6rem);
+      font-weight: 900; line-height: 1.1;
+      color: var(--white);
+      margin-bottom: 20px;
+    }
+    .hero h1 em {
+      font-style: italic; color: var(--accent);
+    }
+    .hero p {
+      font-size: 1.15rem; line-height: 1.7;
+      color: rgba(255,255,255,0.8);
+      margin-bottom: 36px; max-width: 480px;
+    }
+    .hero-buttons { display: flex; gap: 16px; flex-wrap: wrap; }
+    .btn-primary {
+      background: var(--accent); color: var(--navy);
+      padding: 14px 32px; border-radius: 10px;
+      text-decoration: none; font-weight: 700;
+      font-size: 1rem;
+      transition: transform 0.2s, box-shadow 0.2s;
+      box-shadow: 0 4px 20px rgba(245,158,11,0.4);
+    }
+    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(245,158,11,0.5); }
+    .btn-secondary {
+      background: rgba(255,255,255,0.12);
+      border: 1.5px solid rgba(255,255,255,0.3);
+      color: var(--white);
+      padding: 14px 32px; border-radius: 10px;
+      text-decoration: none; font-weight: 600;
+      font-size: 1rem;
+      transition: background 0.2s;
+    }
+    .btn-secondary:hover { background: rgba(255,255,255,0.2); }
+    .hero-trust {
+      display: flex; align-items: center; gap: 12px;
+      margin-top: 28px; color: rgba(255,255,255,0.6);
+      font-size: 0.88rem;
+    }
+    .hero-trust span { color: var(--accent2); font-weight: 600; }
+
+    /* Hero card mockup */
+    .hero-visual {
+      display: flex; justify-content: center; align-items: center;
+    }
+    .mockup-card {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 20px;
+      padding: 32px;
+      backdrop-filter: blur(20px);
+      width: 100%; max-width: 420px;
+      animation: float 4s ease-in-out infinite;
+    }
+    @keyframes float {
+      0%, 100% { transform: translateY(0); }
+      50%       { transform: translateY(-10px); }
+    }
+    .mockup-title {
+      font-family: 'Fraunces', serif;
+      color: var(--white); font-size: 1rem; font-weight: 700;
+      margin-bottom: 20px; opacity: 0.9;
+    }
+    .mockup-row {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 12px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      font-size: 0.85rem;
+    }
+    .mockup-row:last-child { border-bottom: none; }
+    .mockup-req { color: rgba(255,255,255,0.75); max-width: 220px; line-height: 1.4; }
+    .badge {
+      padding: 4px 12px; border-radius: 100px;
+      font-size: 0.75rem; font-weight: 700;
+      white-space: nowrap;
+    }
+    .badge-match   { background: rgba(16,185,129,0.2); color: #10B981; }
+    .badge-partial { background: rgba(245,158,11,0.2); color: #F59E0B; }
+    .badge-no      { background: rgba(239,68,68,0.2);  color: #EF4444; }
+    .mockup-decision {
+      margin-top: 20px;
+      background: rgba(16,185,129,0.15);
+      border: 1px solid rgba(16,185,129,0.3);
+      border-radius: 10px; padding: 14px 18px;
+      text-align: center;
+      color: #10B981; font-weight: 700; font-size: 1rem;
+    }
+
+    /* ── PROBLEM ── */
+    .problem {
+      background: var(--light);
+      padding: 100px 6%;
+    }
+    .section-label {
+      text-align: center;
+      font-size: 0.8rem; font-weight: 700;
+      letter-spacing: 2px; text-transform: uppercase;
+      color: var(--accent); margin-bottom: 12px;
+    }
+    .section-title {
+      font-family: 'Fraunces', serif;
+      font-size: clamp(1.8rem, 3vw, 2.6rem);
+      font-weight: 900; text-align: center;
+      color: var(--navy); margin-bottom: 16px;
+      line-height: 1.2;
+    }
+    .section-sub {
+      text-align: center; color: var(--muted);
+      font-size: 1.05rem; max-width: 560px;
+      margin: 0 auto 60px; line-height: 1.7;
+    }
+    .pain-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr);
+      gap: 28px; max-width: 1100px; margin: 0 auto;
+    }
+    .pain-card {
+      background: var(--white);
+      border-radius: 16px; padding: 32px 28px;
+      border: 1px solid var(--border);
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .pain-card:hover { transform: translateY(-4px); box-shadow: 0 12px 40px rgba(15,37,87,0.1); }
+    .pain-icon { font-size: 2rem; margin-bottom: 16px; }
+    .pain-card h3 {
+      font-family: 'Fraunces', serif;
+      font-size: 1.15rem; font-weight: 700;
+      color: var(--navy); margin-bottom: 10px;
+    }
+    .pain-card p { color: var(--muted); font-size: 0.95rem; line-height: 1.6; }
+
+    /* ── HOW IT WORKS ── */
+    .how {
+      padding: 100px 6%;
+      background: var(--white);
+    }
+    .steps {
+      display: grid; grid-template-columns: repeat(3, 1fr);
+      gap: 40px; max-width: 1000px; margin: 0 auto;
+      position: relative;
+    }
+    .steps::before {
+      content: '';
+      position: absolute; top: 36px; left: 16%; right: 16%;
+      height: 2px;
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+      z-index: 0;
+    }
+    .step { text-align: center; position: relative; z-index: 1; }
+    .step-num {
+      width: 72px; height: 72px;
+      background: linear-gradient(135deg, var(--blue), var(--navy));
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'Fraunces', serif;
+      font-size: 1.6rem; font-weight: 900; color: var(--white);
+      margin: 0 auto 20px;
+      box-shadow: 0 8px 24px rgba(30,58,138,0.3);
+    }
+    .step h3 {
+      font-family: 'Fraunces', serif;
+      font-size: 1.1rem; font-weight: 700;
+      color: var(--navy); margin-bottom: 10px;
+    }
+    .step p { color: var(--muted); font-size: 0.93rem; line-height: 1.6; }
+
+    /* ── FEATURES ── */
+    .features {
+      background: var(--light);
+      padding: 100px 6%;
+    }
+    .features-grid {
+      display: grid; grid-template-columns: repeat(2, 1fr);
+      gap: 24px; max-width: 960px; margin: 0 auto;
+    }
+    .feature-card {
+      background: var(--white);
+      border-radius: 16px; padding: 28px;
+      border: 1px solid var(--border);
+      display: flex; gap: 20px; align-items: flex-start;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .feature-card:hover { transform: translateY(-3px); box-shadow: 0 10px 32px rgba(15,37,87,0.08); }
+    .feature-icon {
+      width: 48px; height: 48px; flex-shrink: 0;
+      background: var(--light);
+      border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.4rem;
+    }
+    .feature-card h3 {
+      font-family: 'Fraunces', serif;
+      font-size: 1.05rem; font-weight: 700;
+      color: var(--navy); margin-bottom: 6px;
+    }
+    .feature-card p { color: var(--muted); font-size: 0.92rem; line-height: 1.6; }
+
+    /* ── WHO IS IT FOR ── */
+    .who {
+      padding: 100px 6%;
+      background: var(--white);
+    }
+    .who-grid {
+      display: grid; grid-template-columns: repeat(4, 1fr);
+      gap: 24px; max-width: 1100px; margin: 0 auto;
+    }
+    .who-card {
+      border-radius: 16px; padding: 32px 24px;
+      text-align: center;
+      border: 2px solid var(--border);
+      transition: border-color 0.2s, transform 0.2s;
+    }
+    .who-card:hover { border-color: var(--blue); transform: translateY(-3px); }
+    .who-emoji { font-size: 2.4rem; margin-bottom: 14px; }
+    .who-card h3 {
+      font-family: 'Fraunces', serif;
+      font-size: 1rem; font-weight: 700;
+      color: var(--navy); margin-bottom: 8px;
+    }
+    .who-card p { color: var(--muted); font-size: 0.88rem; line-height: 1.5; }
+
+    /* ── PRICING ── */
+    .pricing {
+      background: linear-gradient(135deg, #0F2557, #1E3A8A);
+      padding: 100px 6%;
+      text-align: center;
+    }
+    .pricing .section-title { color: var(--white); }
+    .pricing .section-sub   { color: rgba(255,255,255,0.7); }
+    .pricing-cards {
+      display: flex; gap: 28px; justify-content: center;
+      flex-wrap: wrap; margin-top: 20px;
+    }
+    .pricing-card {
+      background: rgba(255,255,255,0.07);
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 20px; padding: 40px 36px;
+      min-width: 260px; flex: 1; max-width: 300px;
+      backdrop-filter: blur(10px);
+      transition: transform 0.2s;
+    }
+    .pricing-card:hover { transform: translateY(-4px); }
+    .pricing-card.featured {
+      background: var(--accent);
+      border-color: var(--accent);
+    }
+    .pricing-tag {
+      font-size: 0.75rem; font-weight: 700;
+      letter-spacing: 1.5px; text-transform: uppercase;
+      color: rgba(255,255,255,0.6);
+      margin-bottom: 12px;
+    }
+    .pricing-card.featured .pricing-tag { color: rgba(15,37,87,0.7); }
+    .pricing-amount {
+      font-family: 'Fraunces', serif;
+      font-size: 3rem; font-weight: 900;
+      color: var(--white); line-height: 1;
+      margin-bottom: 6px;
+    }
+    .pricing-card.featured .pricing-amount { color: var(--navy); }
+    .pricing-per {
+      font-size: 0.88rem; color: rgba(255,255,255,0.6);
+      margin-bottom: 28px;
+    }
+    .pricing-card.featured .pricing-per { color: rgba(15,37,87,0.6); }
+    .pricing-features { list-style: none; text-align: left; margin-bottom: 32px; }
+    .pricing-features li {
+      color: rgba(255,255,255,0.85);
+      font-size: 0.92rem; padding: 7px 0;
+      display: flex; gap: 10px; align-items: flex-start;
+    }
+    .pricing-card.featured .pricing-features li { color: var(--navy); }
+    .pricing-features li::before { content: '✓'; font-weight: 700; flex-shrink: 0; }
+    .pricing-btn {
+      display: block; width: 100%;
+      padding: 13px; border-radius: 10px;
+      text-align: center; text-decoration: none;
+      font-weight: 700; font-size: 0.95rem;
+      background: rgba(255,255,255,0.15);
+      color: var(--white);
+      transition: background 0.2s;
+    }
+    .pricing-card.featured .pricing-btn {
+      background: var(--navy); color: var(--white);
+    }
+    .pricing-btn:hover { background: rgba(255,255,255,0.25); }
+    .pricing-card.featured .pricing-btn:hover { background: #0a1a3d; }
+
+    /* ── DEMO ── */
+    .demo {
+      padding: 100px 6%;
+      background: var(--light);
+      text-align: center;
+    }
+    .demo-box {
+      max-width: 700px; margin: 0 auto;
+      background: var(--white);
+      border-radius: 20px; padding: 48px;
+      border: 1px solid var(--border);
+      box-shadow: 0 20px 60px rgba(15,37,87,0.08);
+    }
+    .demo-box p {
+      color: var(--muted); font-size: 1rem;
+      line-height: 1.7; margin-bottom: 28px;
+    }
+    .demo-steps {
+      display: flex; flex-direction: column; gap: 16px;
+      margin-bottom: 36px; text-align: left;
+    }
+    .demo-step {
+      display: flex; gap: 16px; align-items: flex-start;
+    }
+    .demo-step-num {
+      width: 32px; height: 32px; flex-shrink: 0;
+      background: var(--light);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700; font-size: 0.85rem; color: var(--blue);
+    }
+    .demo-step-text { color: var(--text); font-size: 0.95rem; line-height: 1.5; padding-top: 5px; }
+    .demo-step-text strong { color: var(--navy); }
+    .btn-demo {
+      display: inline-block;
+      background: var(--blue); color: var(--white);
+      padding: 15px 40px; border-radius: 10px;
+      text-decoration: none; font-weight: 700;
+      font-size: 1rem;
+      transition: background 0.2s, transform 0.2s;
+      box-shadow: 0 4px 20px rgba(30,58,138,0.25);
+    }
+    .btn-demo:hover { background: var(--navy); transform: translateY(-2px); }
+
+    /* ── TESTIMONIAL ── */
+    .testimonial {
+      padding: 80px 6%;
+      background: var(--white);
+      text-align: center;
+    }
+    .testimonial-quote {
+      font-family: 'Fraunces', serif;
+      font-size: clamp(1.3rem, 2.5vw, 1.9rem);
+      font-style: italic; font-weight: 400;
+      color: var(--navy); max-width: 760px;
+      margin: 0 auto 24px; line-height: 1.5;
+    }
+    .testimonial-author {
+      color: var(--muted); font-size: 0.92rem; font-weight: 600;
+    }
+
+    /* ── CTA ── */
+    .cta {
+      background: linear-gradient(135deg, #0F2557, #1E3A8A);
+      padding: 100px 6%; text-align: center;
+      position: relative; overflow: hidden;
+    }
+    .cta::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: radial-gradient(ellipse at 50% 50%, rgba(245,158,11,0.1) 0%, transparent 70%);
+    }
+    .cta h2 {
+      font-family: 'Fraunces', serif;
+      font-size: clamp(2rem, 3.5vw, 3rem);
+      font-weight: 900; color: var(--white);
+      margin-bottom: 16px; position: relative;
+    }
+    .cta h2 em { font-style: italic; color: var(--accent); }
+    .cta p {
+      color: rgba(255,255,255,0.75); font-size: 1.1rem;
+      margin-bottom: 36px; position: relative;
+    }
+    .cta-buttons {
+      display: flex; gap: 16px; justify-content: center;
+      flex-wrap: wrap; position: relative;
+    }
+
+    /* ── FOOTER ── */
+    footer {
+      background: var(--navy);
+      padding: 40px 6%;
+      display: flex; justify-content: space-between; align-items: center;
+      flex-wrap: wrap; gap: 16px;
+    }
+    .footer-logo {
+      font-family: 'Fraunces', serif;
+      font-size: 1.2rem; font-weight: 900;
+      color: var(--white);
+    }
+    .footer-logo span { color: var(--accent); }
+    footer p {
+      color: rgba(255,255,255,0.45);
+      font-size: 0.85rem;
+    }
+    .footer-links { display: flex; gap: 24px; }
+    .footer-links a {
+      color: rgba(255,255,255,0.5);
+      text-decoration: none; font-size: 0.85rem;
+      transition: color 0.2s;
+    }
+    .footer-links a:hover { color: var(--white); }
+
+    /* ── ANIMATIONS ── */
+    .fade-up {
+      opacity: 0; transform: translateY(28px);
+      transition: opacity 0.6s ease, transform 0.6s ease;
+    }
+    .fade-up.visible { opacity: 1; transform: translateY(0); }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 900px) {
+      .hero-grid      { grid-template-columns: 1fr; }
+      .hero-visual    { display: none; }
+      .pain-grid      { grid-template-columns: 1fr; }
+      .steps          { grid-template-columns: 1fr; }
+      .steps::before  { display: none; }
+      .features-grid  { grid-template-columns: 1fr; }
+      .who-grid       { grid-template-columns: repeat(2,1fr); }
+      .nav-links      { display: none; }
+      footer          { flex-direction: column; text-align: center; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-logo">Tender<span>Sense</span></div>
+  <ul class="nav-links">
+    <li><a href="#how">How it Works</a></li>
+    <li><a href="#features">Features</a></li>
+    <li><a href="#pricing">Pricing</a></li>
+    <li><a href="#demo">Try it</a></li>
+  </ul>
+  <a href="https://sangy-tendersense.streamlit.app/" class="nav-cta" target="_blank">Try Free →</a>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-grid">
+    <div class="hero-content">
+      <div class="hero-badge">🤖 AI-Powered for MSMEs</div>
+      <h1>Stop Guessing.<br/>Start <em>Winning</em> Tenders.</h1>
+      <p>TenderSense reads your tender document and tells you in seconds — are you eligible to bid? No more wasting hours on tenders you can't win.</p>
+      <div class="hero-buttons">
+        <a href="https://sangy-tendersense.streamlit.app/" class="btn-primary" target="_blank">🚀 Try Free — 1 Check on Us</a>
+        <a href="#demo" class="btn-secondary">See How It Works</a>
+      </div>
+      <div class="hero-trust">
+        ✅ <span>1 free check</span> · No signup needed · Results in seconds
+      </div>
+    </div>
+    <div class="hero-visual">
+      <div class="mockup-card">
+        <div class="mockup-title">📊 Eligibility Evaluation</div>
+        <div class="mockup-row">
+          <span class="mockup-req">Minimum 5 years experience in civil works</span>
+          <span class="badge badge-match">MATCH</span>
+        </div>
+        <div class="mockup-row">
+          <span class="mockup-req">ISO 9001:2015 Certification required</span>
+          <span class="badge badge-partial">PARTIAL</span>
+        </div>
+        <div class="mockup-row">
+          <span class="mockup-req">Annual turnover ₹5 Cr minimum</span>
+          <span class="badge badge-match">MATCH</span>
+        </div>
+        <div class="mockup-row">
+          <span class="mockup-req">MSME registration mandatory</span>
+          <span class="badge badge-no">NO MATCH</span>
+        </div>
+        <div class="mockup-decision">🎯 Decision: CONDITIONAL GO</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PROBLEM -->
+<section class="problem" id="problem">
+  <div class="section-label">The Problem</div>
+  <h2 class="section-title">Tender documents are a nightmare.<br/>We fix that.</h2>
+  <p class="section-sub">MSMEs lose time and money bidding on tenders they were never eligible for in the first place.</p>
+  <div class="pain-grid">
+    <div class="pain-card fade-up">
+      <div class="pain-icon">📄</div>
+      <h3>80-Page Documents</h3>
+      <p>Eligibility criteria buried deep inside dense legal text. Finding them takes hours — if you even find them all.</p>
+    </div>
+    <div class="pain-card fade-up">
+      <div class="pain-icon">💸</div>
+      <h3>Wasted Bid Costs</h3>
+      <p>Preparing a bid costs time and money. Doing it for a tender you can't win is a painful, avoidable loss.</p>
+    </div>
+    <div class="pain-card fade-up">
+      <div class="pain-icon">😰</div>
+      <h3>Consultant Dependency</h3>
+      <p>Paying ₹2,000–₹5,000 to a consultant just to know if you're eligible — before even starting the bid.</p>
+    </div>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section class="how" id="how">
+  <div class="section-label">How It Works</div>
+  <h2 class="section-title">3 Simple Steps to<br/>Your Bid Decision</h2>
+  <p class="section-sub">No training needed. No complex setup. Just upload and get your answer.</p>
+  <div class="steps">
+    <div class="step fade-up">
+      <div class="step-num">1</div>
+      <h3>Upload Your Documents</h3>
+      <p>Upload the tender PDF and your company profile PDF. That's all we need.</p>
+    </div>
+    <div class="step fade-up">
+      <div class="step-num">2</div>
+      <h3>AI Analyses Eligibility</h3>
+      <p>Our AI extracts all mandatory requirements and matches them against your company profile.</p>
+    </div>
+    <div class="step fade-up">
+      <div class="step-num">3</div>
+      <h3>Get Your Bid Decision</h3>
+      <p>Receive a clear GO / NO-GO verdict with detailed breakdown and a downloadable PDF report.</p>
+    </div>
+  </div>
+</section>
+
+<!-- FEATURES -->
+<section class="features" id="features">
+  <div class="section-label">Features</div>
+  <h2 class="section-title">Everything You Need<br/>to Bid Smarter</h2>
+  <p class="section-sub">Built specifically for MSMEs, tender consultants, and government contractors.</p>
+  <div class="features-grid">
+    <div class="feature-card fade-up">
+      <div class="feature-icon">🔍</div>
+      <div>
+        <h3>Smart Requirement Extraction</h3>
+        <p>Automatically pulls out licenses, certifications, turnover requirements, experience criteria — nothing missed.</p>
+      </div>
+    </div>
+    <div class="feature-card fade-up">
+      <div class="feature-icon">🎯</div>
+      <div>
+        <h3>MATCH / PARTIAL / NO MATCH</h3>
+        <p>Every requirement is evaluated against your company profile with a clear status — no ambiguity.</p>
+      </div>
+    </div>
+    <div class="feature-card fade-up">
+      <div class="feature-icon">📄</div>
+      <div>
+        <h3>Downloadable PDF Report</h3>
+        <p>Get a branded evaluation report you can share with your team or use for internal decision-making.</p>
+      </div>
+    </div>
+    <div class="feature-card fade-up">
+      <div class="feature-icon">⚡</div>
+      <div>
+        <h3>Results in Seconds</h3>
+        <p>What used to take hours of reading now takes under 60 seconds. Evaluate more tenders, win more bids.</p>
+      </div>
+    </div>
+    <div class="feature-card fade-up">
+      <div class="feature-icon">🔒</div>
+      <div>
+        <h3>Secure & Private</h3>
+        <p>Your documents are processed securely and never stored. Your business data stays yours.</p>
+      </div>
+    </div>
+    <div class="feature-card fade-up">
+      <div class="feature-icon">💰</div>
+      <div>
+        <h3>Affordable for MSMEs</h3>
+        <p>At just ₹49 per check, it's a fraction of what you'd pay a consultant — with instant results.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- WHO IS IT FOR -->
+<section class="who" id="who">
+  <div class="section-label">Who It's For</div>
+  <h2 class="section-title">Made for Every<br/>Tender Bidder</h2>
+  <p class="section-sub">Whether you bid occasionally or every week — TenderSense saves you time and money.</p>
+  <div class="who-grid">
+    <div class="who-card fade-up">
+      <div class="who-emoji">🏭</div>
+      <h3>Small MSMEs</h3>
+      <p>No dedicated legal team? No problem. Get instant eligibility clarity before investing in a bid.</p>
+    </div>
+    <div class="who-card fade-up">
+      <div class="who-emoji">📋</div>
+      <h3>Tender Consultants</h3>
+      <p>Evaluate multiple tenders for clients faster. Deliver professional reports in minutes, not days.</p>
+    </div>
+    <div class="who-card fade-up">
+      <div class="who-emoji">🏛️</div>
+      <h3>Government Contractors</h3>
+      <p>Stay on top of complex government tender requirements and never miss a critical eligibility clause.</p>
+    </div>
+    <div class="who-card fade-up">
+      <div class="who-emoji">🚀</div>
+      <h3>Startups & New Bidders</h3>
+      <p>New to government tenders? TenderSense guides you through eligibility so you start on the right foot.</p>
+    </div>
+  </div>
+</section>
+
+<!-- PRICING -->
+<section class="pricing" id="pricing">
+  <div class="section-label" style="color: rgba(245,158,11,0.8)">Pricing</div>
+  <h2 class="section-title">Simple, Honest Pricing</h2>
+  <p class="section-sub">Start free. Pay only when you need more. No subscriptions, no surprises.</p>
+  <div class="pricing-cards">
+    <div class="pricing-card fade-up">
+      <div class="pricing-tag">Free</div>
+      <div class="pricing-amount">₹0</div>
+      <div class="pricing-per">1 check, no signup</div>
+      <ul class="pricing-features">
+        <li>1 full eligibility check</li>
+        <li>Complete requirement extraction</li>
+        <li>MATCH / PARTIAL / NO MATCH</li>
+        <li>GO / NO-GO decision</li>
+        <li>PDF report download</li>
+      </ul>
+      <a href="https://sangy-tendersense.streamlit.app/" class="pricing-btn" target="_blank">Start Free</a>
+    </div>
+    <div class="pricing-card featured fade-up">
+      <div class="pricing-tag">Pay Per Check</div>
+      <div class="pricing-amount">₹49</div>
+      <div class="pricing-per">per eligibility check</div>
+      <ul class="pricing-features">
+        <li>Everything in Free</li>
+        <li>Instant unlock after payment</li>
+        <li>Branded PDF report</li>
+        <li>WhatsApp support included</li>
+        <li>Valid for any tender type</li>
+      </ul>
+      <a href="https://sangy-tendersense.streamlit.app/" class="pricing-btn" target="_blank">Get Started →</a>
+    </div>
+    <div class="pricing-card fade-up">
+      <div class="pricing-tag">Coming Soon</div>
+      <div class="pricing-amount">₹499</div>
+      <div class="pricing-per">per month · 15 checks</div>
+      <ul class="pricing-features">
+        <li>15 checks per month</li>
+        <li>Priority support</li>
+        <li>Bulk report downloads</li>
+        <li>Best for consultants</li>
+        <li>Early access pricing</li>
+      </ul>
+      <a href="/cdn-cgi/l/email-protection#1162707f766820236351767c70787d3f727e7c2e6264737b7472652c45747f75746342747f6274315c7e7f65797d6831417d707f31587f657463746265" class="pricing-btn">Notify Me</a>
+    </div>
+  </div>
+</section>
+
+<!-- DEMO -->
+<section class="demo" id="demo">
+  <div class="section-label">See It in Action</div>
+  <h2 class="section-title">Try It Yourself — Free</h2>
+  <div class="demo-box fade-up">
+    <p>No signup. No credit card. Just upload your tender and company profile PDFs and get your eligibility verdict in under 60 seconds.</p>
+    <div class="demo-steps">
+      <div class="demo-step">
+        <div class="demo-step-num">1</div>
+        <div class="demo-step-text"><strong>Upload your tender PDF</strong> — any government or private sector tender works</div>
+      </div>
+      <div class="demo-step">
+        <div class="demo-step-num">2</div>
+        <div class="demo-step-text"><strong>Upload your company profile PDF</strong> — include your registrations, experience, certifications</div>
+      </div>
+      <div class="demo-step">
+        <div class="demo-step-num">3</div>
+        <div class="demo-step-text"><strong>Click Run</strong> — get your full eligibility report with GO / NO-GO decision</div>
+      </div>
+    </div>
+    <a href="https://sangy-tendersense.streamlit.app/" class="btn-demo" target="_blank">🚀 Try Free Now — 1 Check on Us</a>
+  </div>
+</section>
+
+<!-- TESTIMONIAL -->
+<section class="testimonial">
+  <div class="testimonial-quote fade-up">
+    "We used to spend half a day reading tenders before deciding to bid. TenderSense gives us the answer in under a minute — it's changed how we work completely."
+  </div>
+  <div class="testimonial-author fade-up">— MSME Business Owner, Mumbai</div>
+</section>
+
+<!-- CTA -->
+<section class="cta">
+  <h2>Ready to Bid <em>Smarter?</em></h2>
+  <p>Join MSMEs already saving time and money on every tender decision.</p>
+  <div class="cta-buttons">
+    <a href="https://sangy-tendersense.streamlit.app/" class="btn-primary" target="_blank">🚀 Try Free — No Signup Needed</a>
+    <a href="https://wa.me/919820123456?text=Hi%2C%20I%20want%20to%20know%20more%20about%20TenderSense" class="btn-secondary" target="_blank">💬 Chat with Us</a>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-logo">Tender<span>Sense</span></div>
+  <p>© 2024 TenderSense · AI-powered bid decisions for MSMEs</p>
+  <div class="footer-links">
+    <a href="https://sangy-tendersense.streamlit.app/" target="_blank">App</a>
+    <a href="/cdn-cgi/l/email-protection#cebdafa0a9b7fffcbc8ea9a3afa7a2e0ada1a3">Support</a>
+    <a href="https://wa.me/919820123456">WhatsApp</a>
+  </div>
+</footer>
+
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
+  // Fade-up on scroll
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach((e, i) => {
+      if (e.is
