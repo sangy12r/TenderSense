@@ -44,11 +44,10 @@ FEEDBACK_EMAIL       = "sangy12r@gmail.com"  # can be same as support
 # Each code = 1 paid check. Share one code per payment manually via email/WhatsApp.
 # Change these to any secret strings you prefer.
 VALID_UNLOCK_CODES = {
-    "TSENSE2024A",
-    "TSENSE2024B",
-    "TSENSE2024C",
-    "TSENSE2024D",
-    "TSENSE2024E",
+    "TSENSE2024A", "TSENSE2024B", "TSENSE2024C", "TSENSE2024D", "TSENSE2024E",
+    "TSENSE2025A", "TSENSE2025B", "TSENSE2025C", "TSENSE2025D", "TSENSE2025E",
+    "TSENSE2025F", "TSENSE2025G", "TSENSE2025H", "TSENSE2025J", "TSENSE2025K",
+    "TSENSE2025L", "TSENSE2025M", "TSENSE2025N", "TSENSE2025P", "TSENSE2025Q",
 }
 
 # -------------------------------------------------------
