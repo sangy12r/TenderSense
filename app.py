@@ -478,7 +478,32 @@ if result:
                 file_name="tendersense_report.pdf",
                 mime="application/pdf"
             )
+# -------------------------------------------------------
+        # EMAIL CAPTURE — after free check result
+        # -------------------------------------------------------
+        st.markdown("---")
+        st.markdown("### 📬 Want to save this report or run more checks?")
+        st.caption("Leave your email and we'll send you your report + a special offer.")
 
+        col_email, col_btn = st.columns([3, 1])
+        with col_email:
+            user_email = st.text_input(
+                "Your email address",
+                placeholder="yourname@company.com",
+                label_visibility="collapsed"
+            )
+        with col_btn:
+            email_submitted = st.button("📨 Notify Me")
+
+        if email_submitted:
+            if user_email and "@" in user_email:
+                # Save to a simple text log file
+                with open("email_leads.txt", "a") as log:
+                    import datetime
+                    log.write(f"{datetime.datetime.now()} | {user_email} | {final_decision}\n")
+                st.success("✅ Done! We'll be in touch shortly.")
+            else:
+                st.warning("Please enter a valid email address.")
     else:
         # ---- PREVIEW + PAYWALL ----
         st.markdown("### 🔍 Preview (Limited Results)")
