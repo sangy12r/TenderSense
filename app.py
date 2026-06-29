@@ -35,14 +35,10 @@ FREE_CHECKS_LIMIT    = 1
 RAZORPAY_LINK        = "https://razorpay.me/@sangeetaailabs"
 PRICE_DISPLAY        = "₹49"
 
-# Support & feedback contacts — update these with your real details
-WHATSAPP_NUMBER      = "918692859069"       # your number with country code, no + sign
-SUPPORT_EMAIL        = "sangy12r@gmail.com"   # your support email
-FEEDBACK_EMAIL       = "sangy12r@gmail.com"  # can be same as support
+WHATSAPP_NUMBER      = "918692859069"
+SUPPORT_EMAIL        = "sangy12r@gmail.com"
+FEEDBACK_EMAIL       = "sangy12r@gmail.com"
 
-# Unlock codes — add as many as you want.
-# Each code = 1 paid check. Share one code per payment manually via email/WhatsApp.
-# Change these to any secret strings you prefer.
 VALID_UNLOCK_CODES = {
     "TSENSE2024A", "TSENSE2024B", "TSENSE2024C", "TSENSE2024D", "TSENSE2024E",
     "TSENSE2025A", "TSENSE2025B", "TSENSE2025C", "TSENSE2025D", "TSENSE2025E",
@@ -53,17 +49,24 @@ VALID_UNLOCK_CODES = {
 # -------------------------------------------------------
 # Session state initialisation
 # -------------------------------------------------------
-if "free_checks_used" not in st.session_state:
-    st.session_state.free_checks_used = 0
+if "free_checks_used"   not in st.session_state:
+    st.session_state.free_checks_used  = 0
+if "paid_checks"        not in st.session_state:
+    st.session_state.paid_checks       = 0
+if "used_codes"         not in st.session_state:
+    st.session_state.used_codes        = set()
+if "analysis_result"    not in st.session_state:
+    st.session_state.analysis_result   = None
 
-if "paid_checks" not in st.session_state:
-    st.session_state.paid_checks = 0
-
-if "used_codes" not in st.session_state:
-    st.session_state.used_codes = set()
-
-if "analysis_result" not in st.session_state:
-    st.session_state.analysis_result = None
+# NEW — Step flow
+if "step"               not in st.session_state:
+    st.session_state.step              = 1   # 1 = Understand, 2 = Eligibility
+if "tender_summary"     not in st.session_state:
+    st.session_state.tender_summary    = None
+if "tender_text_cached" not in st.session_state:
+    st.session_state.tender_text_cached = None
+if "chat_history"       not in st.session_state:
+    st.session_state.chat_history      = []  # list of {"role": ..., "content": ...}
 
 # -------------------------------------------------------
 # Helper functions
@@ -83,8 +86,7 @@ def clean_json_response(content):
     if content.startswith("```"):
         content = content.replace("```json", "")
         content = content.replace("```", "")
-    content = content.strip()
-    return content
+    return content.strip()
 
 
 def check_file_size(uploaded_file, max_size_mb=10):
@@ -141,7 +143,6 @@ def consume_check():
 
 
 def is_unlocked():
-    """Full results visible if: still has free check OR has paid checks."""
     return user_can_run() or st.session_state.paid_checks > 0
 
 
@@ -168,7 +169,7 @@ This AI system extracts mandatory eligibility criteria from a tender and evaluat
 
 col1, col2, col3 = st.columns(3)
 with col1:
-    st.info("📑 Extract Requirements")
+    st.info("📑 Understand the Tender")
 with col2:
     st.info("🔍 Evaluate Company Fit")
 with col3:
@@ -194,8 +195,6 @@ else:
 # -------------------------------------------------------
 if not user_can_run():
     st.markdown("---")
-
-    # Pay first block
     st.markdown("### 💳 Pay to Run Another Check")
     st.markdown("""
 - ✅ Complete eligibility analysis
@@ -226,39 +225,176 @@ if not user_can_run():
         else:
             st.error("❌ Invalid code. Please check and try again.")
 
-# -------------------------------------------------------
-# Main app — file upload + eligibility check
-# -------------------------------------------------------
 st.markdown("---")
-st.markdown("### Upload Documents")
-tender_file  = st.file_uploader("Upload Tender PDF", type="pdf")
-company_file = st.file_uploader("Upload Company Profile PDF", type="pdf")
-run_button   = st.button("🚀 Run Eligibility Check", disabled=not user_can_run())
 
-if (
-    tender_file
-    and company_file
-    and check_file_size(tender_file)
-    and check_file_size(company_file)
-    and run_button
-    and user_can_run()
-):
-    with st.spinner("Analyzing tender and company profile..."):
-        tender_text  = extract_text(tender_file)
-        company_text = extract_text(company_file)
+# ═══════════════════════════════════════════════════════
+# STEP INDICATOR
+# ═══════════════════════════════════════════════════════
+step_col1, step_col2 = st.columns(2)
+with step_col1:
+    if st.session_state.step == 1:
+        st.markdown("### 🔵 Step 1 — Understand the Tender  ◀ You are here")
+    else:
+        st.markdown("### ✅ Step 1 — Understand the Tender  (Done)")
+with step_col2:
+    if st.session_state.step == 2:
+        st.markdown("### 🔵 Step 2 — Check Eligibility  ◀ You are here")
+    else:
+        st.markdown("### ⬜ Step 2 — Check Eligibility")
 
-        # STEP 0: Validate tender document
-        validation_response = client.chat.completions.create(
-            model="gpt-4o-mini",
-            temperature=0,
-            messages=[
-                {
-                    "role": "system",
-                    "content": "Check if the document is a tender document."
-                },
-                {
-                    "role": "user",
-                    "content": f"""
+st.markdown("---")
+
+# ═══════════════════════════════════════════════════════
+# STEP 1 — UNDERSTAND THE TENDER
+# ═══════════════════════════════════════════════════════
+if st.session_state.step == 1:
+
+    st.markdown("### 📄 Step 1 — Upload Tender & Understand It")
+    st.caption("Upload the tender PDF. AI will summarise it and answer your questions — before you decide to apply.")
+
+    tender_file_step1 = st.file_uploader("Upload Tender PDF", type="pdf", key="tender_step1")
+
+    if tender_file_step1 and check_file_size(tender_file_step1):
+
+        # Generate summary only once
+        if st.session_state.tender_summary is None:
+            with st.spinner("Reading tender and generating summary..."):
+                tender_text = extract_text(tender_file_step1)
+                st.session_state.tender_text_cached = tender_text
+
+                summary_response = client.chat.completions.create(
+                    model="gpt-4o-mini",
+                    temperature=0,
+                    messages=[
+                        {
+                            "role": "system",
+                            "content": "You are an expert at summarising government and corporate tenders for MSME business owners in simple, clear language."
+                        },
+                        {
+                            "role": "user",
+                            "content": f"""Summarise this tender clearly for a business owner. Use simple language.
+
+Include these sections:
+1. 📌 What is this tender about? (1-2 lines)
+2. 🏢 Who is the issuing authority?
+3. 📅 Important dates (submission deadline, pre-bid meeting if any)
+4. 💰 Estimated value / EMD amount (if mentioned)
+5. 📋 Key eligibility conditions (brief list)
+6. 📦 Scope of work (what the bidder must do)
+7. ⚠️ Any important conditions to note
+
+Tender document:
+{tender_text[:6000]}
+"""
+                        }
+                    ]
+                )
+                st.session_state.tender_summary = summary_response.choices[0].message.content
+                # Seed chat history with context
+                st.session_state.chat_history = [
+                    {
+                        "role": "system",
+                        "content": f"You are a helpful tender advisor. Answer questions about this tender based only on the document provided. If the answer is not in the tender, say so clearly.\n\nTender document:\n{tender_text[:6000]}"
+                    }
+                ]
+
+        # Display summary
+        st.markdown("### 📋 Tender Summary")
+        st.markdown(st.session_state.tender_summary)
+        st.markdown("---")
+
+        # ── Q&A CHAT ──────────────────────────────────────────
+        st.markdown("### 💬 Ask Questions About This Tender")
+        st.caption("Ask anything — deadlines, EMD amount, eligibility conditions, scope of work, etc.")
+
+        # Display chat history (skip system message at index 0)
+        for msg in st.session_state.chat_history[1:]:
+            if msg["role"] == "user":
+                with st.chat_message("user"):
+                    st.write(msg["content"])
+            elif msg["role"] == "assistant":
+                with st.chat_message("assistant"):
+                    st.write(msg["content"])
+
+        # Chat input
+        user_question = st.chat_input("Type your question about the tender...")
+
+        if user_question:
+            # Add user message to history
+            st.session_state.chat_history.append({
+                "role": "user",
+                "content": user_question
+            })
+
+            # Get AI answer
+            with st.spinner("Thinking..."):
+                qa_response = client.chat.completions.create(
+                    model="gpt-4o-mini",
+                    temperature=0,
+                    messages=st.session_state.chat_history
+                )
+                answer = qa_response.choices[0].message.content
+
+            # Add assistant reply to history
+            st.session_state.chat_history.append({
+                "role": "assistant",
+                "content": answer
+            })
+
+            st.rerun()
+
+        st.markdown("---")
+
+        # ── PROCEED BUTTON ─────────────────────────────────────
+        st.markdown("### Ready to check if your company is eligible?")
+        if st.button("✅ Proceed to Eligibility Check →", type="primary"):
+            st.session_state.step = 2
+            st.rerun()
+
+    else:
+        st.info("👆 Upload the tender PDF above to get started.")
+
+# ═══════════════════════════════════════════════════════
+# STEP 2 — ELIGIBILITY CHECK
+# ═══════════════════════════════════════════════════════
+elif st.session_state.step == 2:
+
+    st.markdown("### 🏢 Step 2 — Upload Company Profile & Check Eligibility")
+    st.caption("Now upload your company profile PDF to check eligibility against the tender.")
+
+    # Back button
+    if st.button("← Back to Tender Summary"):
+        st.session_state.step = 1
+        st.session_state.analysis_result = None
+        st.rerun()
+
+    company_file = st.file_uploader("Upload Company Profile PDF", type="pdf", key="company_step2")
+    run_button   = st.button("🚀 Run Eligibility Check", disabled=not user_can_run())
+
+    tender_text = st.session_state.tender_text_cached
+
+    if (
+        company_file
+        and tender_text
+        and check_file_size(company_file)
+        and run_button
+        and user_can_run()
+    ):
+        with st.spinner("Analyzing company profile against tender requirements..."):
+            company_text = extract_text(company_file)
+
+            # STEP 0: Validate tender document
+            validation_response = client.chat.completions.create(
+                model="gpt-4o-mini",
+                temperature=0,
+                messages=[
+                    {
+                        "role": "system",
+                        "content": "Check if the document is a tender document."
+                    },
+                    {
+                        "role": "user",
+                        "content": f"""
 Is this a tender document?
 
 Answer only like this:
@@ -267,34 +403,34 @@ Answer only like this:
 Document:
 {tender_text[:2000]}
 """
-                }
-            ]
-        )
+                    }
+                ]
+            )
 
-        validation_text = validation_response.choices[0].message.content
+            validation_text = validation_response.choices[0].message.content
 
-        try:
-            validation_json = json.loads(clean_json_response(validation_text))
-        except:
-            st.error("❌ Could not check the document.")
-            st.stop()
+            try:
+                validation_json = json.loads(clean_json_response(validation_text))
+            except:
+                st.error("❌ Could not check the document.")
+                st.stop()
 
-        if not validation_json.get("is_tender", False):
-            st.error("❌ This is not a valid tender document.")
-            st.stop()
+            if not validation_json.get("is_tender", False):
+                st.error("❌ This is not a valid tender document. Please go back and upload a correct tender PDF.")
+                st.stop()
 
-        # STEP 1: Extract Eligibility
-        extraction_response = client.chat.completions.create(
-            model="gpt-4o-mini",
-            temperature=0,
-            messages=[
-                {
-                    "role": "system",
-                    "content": "You extract only bidder pre-qualification eligibility criteria from tenders."
-                },
-                {
-                    "role": "user",
-                    "content": f"""
+            # STEP 1: Extract Eligibility
+            extraction_response = client.chat.completions.create(
+                model="gpt-4o-mini",
+                temperature=0,
+                messages=[
+                    {
+                        "role": "system",
+                        "content": "You extract only bidder pre-qualification eligibility criteria from tenders."
+                    },
+                    {
+                        "role": "user",
+                        "content": f"""
 Extract ONLY pre-qualification eligibility criteria required to qualify for bidding.
 
 Include:
@@ -323,33 +459,33 @@ Return STRICT JSON:
 Tender:
 {tender_text}
 """
-                }
-            ]
-        )
+                    }
+                ]
+            )
 
-        extraction_content = clean_json_response(
-            extraction_response.choices[0].message.content
-        )
+            extraction_content = clean_json_response(
+                extraction_response.choices[0].message.content
+            )
 
-        try:
-            requirements_json      = json.loads(extraction_content)
-            mandatory_requirements = requirements_json["mandatory_requirements"]
-        except:
-            st.error("Failed to parse eligibility extraction.")
-            st.stop()
+            try:
+                requirements_json      = json.loads(extraction_content)
+                mandatory_requirements = requirements_json["mandatory_requirements"]
+            except:
+                st.error("Failed to parse eligibility extraction.")
+                st.stop()
 
-        # STEP 2: Evaluate Company
-        matching_response = client.chat.completions.create(
-            model="gpt-4o-mini",
-            temperature=0,
-            messages=[
-                {
-                    "role": "system",
-                    "content": "You are a strict eligibility evaluation engine."
-                },
-                {
-                    "role": "user",
-                    "content": f"""
+            # STEP 2: Evaluate Company
+            matching_response = client.chat.completions.create(
+                model="gpt-4o-mini",
+                temperature=0,
+                messages=[
+                    {
+                        "role": "system",
+                        "content": "You are a strict eligibility evaluation engine."
+                    },
+                    {
+                        "role": "user",
+                        "content": f"""
 Evaluate whether the company satisfies each eligibility requirement.
 
 Rules:
@@ -372,158 +508,153 @@ Eligibility Requirements:
 Company Profile:
 {company_text}
 """
-                }
-            ]
-        )
-
-        matching_content = clean_json_response(
-            matching_response.choices[0].message.content
-        )
-
-        try:
-            matching_json = json.loads(matching_content)
-            evaluation    = matching_json["evaluation"]
-        except:
-            st.error("Failed to parse evaluation output.")
-            st.write(matching_content)
-            st.stop()
-
-        # STEP 3: Determine Decision
-        missing = []
-        partial = []
-
-        for req in mandatory_requirements:
-            status = evaluation.get(req, "NO_MATCH")
-            if status == "NO_MATCH":
-                missing.append(req)
-            elif status == "PARTIAL":
-                partial.append(req)
-
-        if len(missing) == 0:
-            final_decision = "STRONG GO"
-        elif len(missing) <= 2:
-            final_decision = "CONDITIONAL GO"
-        else:
-            final_decision = "NO-GO"
-
-        # Capture unlock state BEFORE consuming the check
-        was_unlocked = user_can_run()
-
-        # Save result to session and deduct check
-        st.session_state.analysis_result = {
-            "mandatory_requirements": mandatory_requirements,
-            "evaluation": evaluation,
-            "missing": missing,
-            "partial": partial,
-            "final_decision": final_decision,
-            "was_unlocked": was_unlocked,
-        }
-        consume_check()
-
-# -------------------------------------------------------
-# DISPLAY RESULTS (from session state)
-# -------------------------------------------------------
-result = st.session_state.analysis_result
-
-if result:
-    mandatory_requirements = result["mandatory_requirements"]
-    evaluation             = result["evaluation"]
-    missing                = result["missing"]
-    partial                = result["partial"]
-    final_decision         = result["final_decision"]
-
-    full_unlocked = result.get("was_unlocked", True)
-
-    st.markdown("---")
-    st.markdown("## 📊 Eligibility Evaluation")
-
-    if full_unlocked:
-        # ---- FULL RESULTS ----
-        for req in mandatory_requirements:
-            status = evaluation.get(req, "NO_MATCH")
-            st.write(f"• {req}")
-            st.write(f"   → {status}")
-            st.write("")
-
-        st.markdown("## Missing Mandatory Requirements")
-        if missing:
-            for m in missing:
-                st.write(f"• {m}")
-        else:
-            st.write("None")
-
-        st.markdown("## Partially Met Requirements")
-        if partial:
-            for p in partial:
-                st.write(f"• {p}")
-        else:
-            st.write("None")
-
-        st.markdown("## Final Bid Recommendation")
-        if final_decision == "STRONG GO":
-            st.success(f"Decision: {final_decision}")
-        elif final_decision == "CONDITIONAL GO":
-            st.warning(f"Decision: {final_decision}")
-        else:
-            st.error(f"Decision: {final_decision}")
-
-        # PDF download
-        st.markdown("---")
-        pdf_path = generate_pdf_report(missing, partial, mandatory_requirements, final_decision)
-        with open(pdf_path, "rb") as f:
-            st.download_button(
-                label="📥 Download Evaluation Report (PDF)",
-                data=f,
-                file_name="tendersense_report.pdf",
-                mime="application/pdf"
+                    }
+                ]
             )
-# -------------------------------------------------------
-        # EMAIL CAPTURE — after free check result
-        # -------------------------------------------------------
-        st.markdown("---")
-        st.markdown("### 📬 Want to save this report or run more checks?")
-        st.caption("Leave your email and we'll send you your report + a special offer.")
 
-        col_email, col_btn = st.columns([3, 1])
-        with col_email:
-            user_email = st.text_input(
-                "Your email address",
-                placeholder="yourname@company.com",
-                label_visibility="collapsed"
+            matching_content = clean_json_response(
+                matching_response.choices[0].message.content
             )
-        with col_btn:
-            email_submitted = st.button("📨 Notify Me")
 
-        if email_submitted:
-            if user_email and "@" in user_email:
-                # Save to a simple text log file
-                with open("email_leads.txt", "a") as log:
-                    import datetime
-                    log.write(f"{datetime.datetime.now()} | {user_email} | {final_decision}\n")
-                st.success("✅ Done! We'll be in touch shortly.")
+            try:
+                matching_json = json.loads(matching_content)
+                evaluation    = matching_json["evaluation"]
+            except:
+                st.error("Failed to parse evaluation output.")
+                st.write(matching_content)
+                st.stop()
+
+            # STEP 3: Determine Decision
+            missing = []
+            partial = []
+
+            for req in mandatory_requirements:
+                status = evaluation.get(req, "NO_MATCH")
+                if status == "NO_MATCH":
+                    missing.append(req)
+                elif status == "PARTIAL":
+                    partial.append(req)
+
+            if len(missing) == 0:
+                final_decision = "STRONG GO"
+            elif len(missing) <= 2:
+                final_decision = "CONDITIONAL GO"
             else:
-                st.warning("Please enter a valid email address.")
-    else:
-        # ---- PREVIEW + PAYWALL ----
-        st.markdown("### 🔍 Preview (Limited Results)")
-        preview_reqs = mandatory_requirements[:2]
-        for req in preview_reqs:
-            status = evaluation.get(req, "NO_MATCH")
-            st.write(f"• {req} → {status}")
+                final_decision = "NO-GO"
+
+            was_unlocked = user_can_run()
+
+            st.session_state.analysis_result = {
+                "mandatory_requirements": mandatory_requirements,
+                "evaluation":             evaluation,
+                "missing":                missing,
+                "partial":                partial,
+                "final_decision":         final_decision,
+                "was_unlocked":           was_unlocked,
+            }
+            consume_check()
+
+    # -------------------------------------------------------
+    # DISPLAY RESULTS (from session state)
+    # -------------------------------------------------------
+    result = st.session_state.analysis_result
+
+    if result:
+        mandatory_requirements = result["mandatory_requirements"]
+        evaluation             = result["evaluation"]
+        missing                = result["missing"]
+        partial                = result["partial"]
+        final_decision         = result["final_decision"]
+        full_unlocked          = result.get("was_unlocked", True)
 
         st.markdown("---")
-        st.warning("🔒 Full evaluation locked")
-        st.markdown(f"""
+        st.markdown("## 📊 Eligibility Evaluation")
+
+        if full_unlocked:
+            for req in mandatory_requirements:
+                status = evaluation.get(req, "NO_MATCH")
+                st.write(f"• {req}")
+                st.write(f"   → {status}")
+                st.write("")
+
+            st.markdown("## Missing Mandatory Requirements")
+            if missing:
+                for m in missing:
+                    st.write(f"• {m}")
+            else:
+                st.write("None")
+
+            st.markdown("## Partially Met Requirements")
+            if partial:
+                for p in partial:
+                    st.write(f"• {p}")
+            else:
+                st.write("None")
+
+            st.markdown("## Final Bid Recommendation")
+            if final_decision == "STRONG GO":
+                st.success(f"Decision: {final_decision}")
+            elif final_decision == "CONDITIONAL GO":
+                st.warning(f"Decision: {final_decision}")
+            else:
+                st.error(f"Decision: {final_decision}")
+
+            # PDF download
+            st.markdown("---")
+            pdf_path = generate_pdf_report(missing, partial, mandatory_requirements, final_decision)
+            with open(pdf_path, "rb") as f:
+                st.download_button(
+                    label="📥 Download Evaluation Report (PDF)",
+                    data=f,
+                    file_name="tendersense_report.pdf",
+                    mime="application/pdf"
+                )
+
+            # EMAIL CAPTURE
+            st.markdown("---")
+            st.markdown("### 📬 Want to save this report or run more checks?")
+            st.caption("Leave your email and we'll send you your report + a special offer.")
+
+            col_email, col_btn = st.columns([3, 1])
+            with col_email:
+                user_email = st.text_input(
+                    "Your email address",
+                    placeholder="yourname@company.com",
+                    label_visibility="collapsed"
+                )
+            with col_btn:
+                email_submitted = st.button("📨 Notify Me")
+
+            if email_submitted:
+                if user_email and "@" in user_email:
+                    with open("email_leads.txt", "a") as log:
+                        import datetime
+                        log.write(f"{datetime.datetime.now()} | {user_email} | {final_decision}\n")
+                    st.success("✅ Done! We'll be in touch shortly.")
+                else:
+                    st.warning("Please enter a valid email address.")
+
+        else:
+            # PREVIEW + PAYWALL
+            st.markdown("### 🔍 Preview (Limited Results)")
+            preview_reqs = mandatory_requirements[:2]
+            for req in preview_reqs:
+                status = evaluation.get(req, "NO_MATCH")
+                st.write(f"• {req} → {status}")
+
+            st.markdown("---")
+            st.warning("🔒 Full evaluation locked")
+            st.markdown(f"""
 Unlock to access:
 - ✅ Complete eligibility analysis
 - ❌ Missing requirements
 - ⚠️ Partially met requirements
 - 🎯 Final GO / NO-GO decision
 - 📄 Downloadable branded PDF report
-        """)
-        st.caption("🔒 Secure payment powered by Razorpay")
-        st.link_button(f"💳 Pay {PRICE_DISPLAY} Securely", RAZORPAY_LINK)
-        st.info("After payment, enter your unlock code above to view the full report.")
+            """)
+            st.caption("🔒 Secure payment powered by Razorpay")
+            st.link_button(f"💳 Pay {PRICE_DISPLAY} Securely", RAZORPAY_LINK)
+            st.info("After payment, enter your unlock code above to view the full report.")
 
 # -------------------------------------------------------
 # SUPPORT & FEEDBACK FOOTER
